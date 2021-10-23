@@ -1,13 +1,13 @@
-# # 95% Confidence
-# qbeta(0.025,47,41)
-# qbeta(0.975,47,41)
-#
-# # 99% Confidence
-# qbeta(0.005,47,41)
-# qbeta(0.995,47,41)
+---
+title: "Skate Metrics"
+author: "Brandon"
+date: "10/22/2021"
+output: html_document
+---
 
-setwd("~/Documents/")
+# Importing and restructuring the data
 
+```{r}
 # Handle NA strings: https://stackoverflow.com/questions/24172111/change-the-blank-cells-to-na#24172277
 data <-
   read.csv(file = 'Skate Metrics.csv', na.strings = c("", " ", "NA"))
@@ -20,13 +20,23 @@ str(data)
 # as.Date : https://stackoverflow.com/questions/47230146/error-message-do-not-know-how-to-convert-dataframecol-to-class-date?rq=1
 data$Date <- as.Date(data$Date, format = "%m/%d/%Y")
 
+# Filling downward the Date and Trick column's values
+# - This assumes we didn't manually fill them in for the same Date or Trick
 data <- fill(data, c("Date", "Trick"), .direction = "down")
+```
 
+# Writing the restructured data to a CSV file
+
+```{r}
 write.csv(data,
           "Skate Metrics - Base Data.csv",
           row.names = FALSE,
-          quote = FALSE) # write base data to csv file
+          quote = FALSE)
+```
 
+# Working with the data
+
+```{r}
 df = data.table(data)
 
 # Order: https://stackoverflow.com/questions/12353820/sort-rows-in-data-table-in-decreasing-order-on-string-key-order-x-v-gives-er
@@ -89,3 +99,6 @@ ggplot(data = df2, aes(x = x, y = value, colour = variable)) + geom_line()
 
 # qbeta(0.025,first_period_nollie$a,first_period_nollie$b)
 # qbeta(0.975,first_period_nollie$a,first_period_nollie$b)
+```
+
+
