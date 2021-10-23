@@ -1,0 +1,190 @@
+---
+title: "Skate Stats"
+author: "Brandon"
+date: "1/20/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+```{r}
+n.trials <- 100000
+prior.alpha <- 3
+prior.beta <- 7
+a.samples <- rbeta(n.trials,36+prior.alpha,114+prior.beta)
+b.samples <- rbeta(n.trials,50+prior.alpha,100+prior.beta)
+```
+
+
+```{r}
+# Sample 10000 draws from Beta(45,55) prior
+prior_A <- rbeta(n = 200, shape1 = 5, shape2 = 55)
+
+# Store the results in a data frame
+prior_sim <- data.frame(prior_A)
+
+# Construct a density plot of the prior sample
+library(ggplot2)
+ggplot(prior_sim, aes(x = prior_A)) + 
+    geom_density(fill="#69b3a2", color="#e9ecef", alpha=0.8)
+```
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+
+Testing whether I can set a value for a whole column (variable) in a dataframe and fill in a whole other column with data in one go.
+
+* Method 1 below does indeed work, but see Method 2 for areas when I want to do this WITHOUT assigning values to temporary variables
+
+```{r}
+# Method 1
+x1 <- 7                  # Column 1 of data frame
+x2 <- c(5, 2, 8, 9)                  # Column 2 of data frame
+x3 <- c(1, 2, 3, 4)                  # Column 3 of data frame
+data_1 <- data.frame(x1, x2, x3)     # Create example data frame
+
+# Method 2
+data.frame(x1 = "hi", x2) # x1 = "hi" assigns the value "hi" to a whole variable named x1
+```
+
+For generating a table with the beta dist code provided above, use a code like this:
+
+```{r}
+data.frame(x1 = "hi", dist = rbeta(n = 200, shape1 = 5, shape2 = 55))
+```
+
+We can loop through something using code such as the following. This:
+
+* Sets up an empty variable before starting the loop
+* Adds to the data frame the output of the rbeta dist (we can swap out values (for x1 and for the parameters for rbeta) based on some information that determines our loop (such as trick name or date --- we might eventually want to have it setup so that we can automatically carry over all metadata fields besides the relevant ones for generating the beta dists))
+
+We can even add on as many variable generations as necessary.
+
+```{r}
+data7 <- data.frame()
+data7 <- rbind(data7, data.frame(x1 = "hi", dist = rbeta(n = 200, shape1 = 5, shape2 = 55), dist2 = rbeta(n = 200, shape1 = 5, shape2 = 5)))
+```
+
+Let's use this to test making a visualization that's similar to what I'm interested in making.
+
+```{r}
+data7 <- data.frame()
+
+n <- 1000
+
+data7 <- rbind(data7, data.frame(trick = "Nollie", dist_type = "prior", dist = rbeta(n = n, shape1 = 6, shape2 = 4)))
+data7 <- rbind(data7, data.frame(trick = "Nollie", dist_type = "outcome", dist = rbeta(n = n, shape1 = 15, shape2 = 5)))
+
+data7 <- rbind(data7, data.frame(trick = "Kickflip", dist_type = "prior", dist = rbeta(n = n, shape1 = 6, shape2 = 4)))
+data7 <- rbind(data7, data.frame(trick = "Kickflip", dist_type = "outcome", dist = rbeta(n = n, shape1 = 15, shape2 = 5)))
+
+library(ggplot2)
+library(ggridges)
+
+ggplot(data7, aes(x = dist, y = trick, fill = dist_type)) +
+  geom_density_ridges(scale = .95, size = 0.25, rel_min_height = 0.01, alpha = .75) +
+  theme_ridges() +
+  labs( x = "Probability of Landing the Trick", fill = "Distribution")
+
+```
+
+Testing out making a loop so I can programmatically produce a chart from an inputted data frame
+
+```{r}
+trick <- c("Kickflip","Nollie","Nose manual")
+prior_a <- c(1,2,3)
+prior_b <- prior_a + 1 # Just giving this dummy data for now
+outcome_a <- prior_a * 10
+outcome_b <- prior_a * 10 + 1
+
+loop_data <- data.frame(trick, prior_a, prior_b, outcome_a, outcome_b)
+
+# See Example 2 here for loops: https://statisticsglobe.com/loop-through-data-frame-columns-rows-in-r/
+for(i in 1:nrow(loop_data)) {       # for-loop over rows
+  print(loop_data[i, "trick"])
+}
+```
+
+With those humble roots, let's try to implement it in a way that automatically produces the chart for us!
+
+```{r}
+trick <- c("Kickflip","Nollie","Nose manual")
+prior_a <- c(1,3,1)
+prior_b <- c(1,2,3)
+outcome_a <- c(1,6,1)
+outcome_b <- c(7,2,3)
+
+loop_data <- data.frame(trick, prior_a, prior_b, outcome_a, outcome_b)
+
+loop_data7 <- data.frame()
+n <- 20000 # this needs to be a large number like this so the charts look smooth
+
+# See Example 2 here for loops: https://statisticsglobe.com/loop-through-data-frame-columns-rows-in-r/
+for(i in 1:nrow(loop_data)) {       # for-loop over rows
+  
+  loop_data7 <- rbind(loop_data7, data.frame(trick = loop_data[i, "trick"], dist_type = "prior", dist = rbeta(n = n, shape1 = loop_data[i, "prior_a"], shape2 = loop_data[i, "prior_b"])))
+  loop_data7 <- rbind(loop_data7, data.frame(trick = loop_data[i, "trick"], dist_type = "outcome", dist = rbeta(n = n, shape1 = loop_data[i, "outcome_a"], shape2 = loop_data[i, "outcome_b"])))
+}
+
+library(ggplot2)
+library(ggridges)
+
+ggplot(loop_data7, aes(x = dist, y = trick, fill = dist_type)) +
+  geom_density_ridges(scale = .95, size = 0.25, rel_min_height = 0.01, alpha = .75) +
+  theme_ridges() +
+  labs( x = "Probability of Landing the Trick", fill = "Distribution")
+
+```
+
+
+testing the `dbeta` function to see if I can make prettier charts with it versus `rbeta`
+
+```{r}
+trick <- c("Kickflip","Nollie","Nose manual")
+prior_a <- c(17,3,1)
+prior_b <- c(6,2,3)
+outcome_a <- c(5,6,1)
+outcome_b <- c(7,2,3)
+
+loop_data <- data.frame(trick, prior_a, prior_b, outcome_a, outcome_b)
+
+loop_data7 <- data.frame()
+n <- 50
+x <- seq(0,1,length=n)
+
+# See Example 2 here for loops: https://statisticsglobe.com/loop-through-data-frame-columns-rows-in-r/
+for(i in 1:nrow(loop_data)) {       # for-loop over rows
+  
+  loop_data7 <- rbind(loop_data7, data.frame(trick = loop_data[i, "trick"], dist_type = "prior", dist = pbeta(x,loop_data[i, "prior_a"],loop_data[i, "prior_b"])))
+  loop_data7 <- rbind(loop_data7, data.frame(trick = loop_data[i, "trick"], dist_type = "outcome", dist = pbeta(x,loop_data[i, "outcome_a"],loop_data[i, "outcome_b"])))    
+}
+
+library(ggplot2)
+library(ggridges)
+
+ggplot(loop_data7, aes(x = dist, y = trick, fill = dist_type)) +
+  geom_density_ridges(scale = .95, size = 0.25, rel_min_height = 0.01, alpha = .75) +
+  theme_ridges() +
+  labs( x = "Probability of Landing the Trick", fill = "Distribution")
+
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
