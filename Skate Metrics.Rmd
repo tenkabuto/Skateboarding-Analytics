@@ -36,25 +36,16 @@ write.csv(data,
 
 # Working with the data
 
+## Summarizing by Trick and various stats
+
 ```{r}
-df = data.table(data)
+df = as.data.table(data)
 
 # Order: https://stackoverflow.com/questions/12353820/sort-rows-in-data-table-in-decreasing-order-on-string-key-order-x-v-gives-er
 data2 <-
-  df[, .(sum(Outcome) / length(Outcome), sum(Outcome), length(Outcome)), by =
-       c("Trick")][order(-V1)]
+  df[, .("Hits to Attempts Ratio" = sum(Outcome) / length(Outcome), "Times Landed" = sum(Outcome), "Num of Attempts" = length(Outcome)), by =
+       c("Trick")][order(-`Hits to Attempts Ratio`)]
 colnames(data2) # [1] "Trick" "V1"    "V2"    "V3"
-
-setnames(
-  data2,
-  colnames(data2),
-  c(
-    "Trick",
-    "Hits to Attempts Ratio",
-    "Times Landed",
-    "Num of Attempts"
-  )
-)
 
 # data2[,c(1:3,5)]
 
