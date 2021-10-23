@@ -51,11 +51,6 @@ colnames(data2) # [1] "Trick" "V1"    "V2"    "V3"
 
 data2
 
-write.csv(data2,
-          "Trick Hits to Attempts.csv",
-          row.names = FALSE,
-          quote = FALSE) # write summary to csv file
-
 # Number of days of tricks recorded
 length(unique(data$Date))
 
@@ -92,4 +87,11 @@ ggplot(data = df2, aes(x = x, y = value, colour = variable)) + geom_line()
 # qbeta(0.975,first_period_nollie$a,first_period_nollie$b)
 ```
 
+### Writing this data to a CSV
+```{r}
+write.csv(data2,
+          "Trick Hits to Attempts.csv",
+          row.names = FALSE,
+          quote = FALSE) # write summary to csv file
+```
 
