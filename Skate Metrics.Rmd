@@ -15,6 +15,7 @@ head(data)
 
 library(tidyr)
 library(data.table)
+library(lubridate)
 str(data)
 
 # as.Date : https://stackoverflow.com/questions/47230146/error-message-do-not-know-how-to-convert-dataframecol-to-class-date?rq=1
@@ -23,6 +24,18 @@ data$Date <- as.Date(data$Date, format = "%m/%d/%Y")
 # Filling downward the Date and Trick column's values
 # - This assumes we didn't manually fill them in for the same Date or Trick
 data <- fill(data, c("Date", "Trick"), .direction = "down")
+
+## Formatting the dates nicely
+### I'm second-guessing whether I need these in the general dataset;
+### maybe change to only using these functions when I'll actually need the formatted dates.
+# data$Week <- week(data$Date)
+# data$Month <- month(data$Date)
+# data$Year <- year(data$Date)
+# data$MonthYear <- my(data$Date)
+
+# Prior probability from the existing Bet / Odds data
+# It handles NA data perfectly!
+data$PriorProbability <- (data$Bet.Succeed / (data$Bet.Succeed + data$Bet.Fail))
 ```
 
 # Writing the restructured data to a CSV file
@@ -93,5 +106,56 @@ write.csv(data2,
           "Trick Hits to Attempts.csv",
           row.names = FALSE,
           quote = FALSE) # write summary to csv file
+```
+
+
+## Making a posterior distribution
+
+* Convert average to nearest 1/N
+  * Use the round_any function mentioned here https://stackoverflow.com/a/56455926
+* Get the fraction for this - use the numerator and the denominator to get `a` and `b` for the beta dist from `a = numerator` and `b = denominator - numerator` - and plug those into the beta function to produce the posterior dist (we can aggregate the outcomes to make the `a` and `b` values)
+  * Use the package `fractional` to work with the fractions: https://rdrr.io/cran/fractional/man/numerators.html
+
+
+```{r}
+library(lubridate)
+df = as.data.table(data)
+
+df$Week <- week(df$Date)
+df$Month <- month(df$Date)
+df$Year <- year(df$Date)
+
+df$MonthYear <- paste(df$Month, df$Year, sep = "-")
+
+# Sort data in reverse chronological order, so that we can group MonthYear in the best order
+# TODO: Figure out if this is even the order that I'd need for charts
+#   We might just need chronological order.
+df <- df[,,][order(-Date)]
+
+# Average the prior probability column by Trick and time periods (NAs are excluded)
+## Order: https://stackoverflow.com/questions/12353820/sort-rows-in-data-table-in-decreasing-order-on-string-key-order-x-v-gives-er
+data2 <-
+  df[, .("Times Landed" = sum(Outcome), "Times Not Landed" = (length(Outcome) - sum(Outcome)), "Num of Attempts" = length(Outcome), "Average Prior Probability" = mean(PriorProbability, na.rm = TRUE)), by =
+       c("Trick","MonthYear")]
+
+## TODO: Handle cases where a trick hasn't had any successes (within time period)
+### This might defer to priors; downstream data visualizations should make it apparent if a distribution is purely composed of priors
+## TODO: Handle cases where a trick hasn't had any prior data provided
+### Currently R gives these tricks a NaN value when we try to average them
+## TODO: Handle case where a trick has neither prior data nor successes
+
+# Convert average to nearest 1/N (which I assume can be rounded turned into a fraction easily)
+# TODO: Use the round_any function mentioned here https://stackoverflow.com/a/56455926
+## If I can't find a way to round a number to the nearest (1/N), then I may need to keep N as 10 for now, which `round(0.55, digits = 1)` would assume
+# prior_N <- 10
+
+## Get fraction for a value
+library(fractional)
+fractional(0.25)
+
+## TODO: Apply this function to the Average Prior Probability, extract numerator and denominator
+
+# Get the fraction for this - use the numerator and the denominator to get `a` and `b` for the beta dist from `a = numerator` and `b = denominator - numerator` - and plug those into the beta function to produce the posterior dist (we can aggregate the outcomes to make the `a` and `b` values)
+
 ```
 
